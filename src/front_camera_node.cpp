@@ -11,15 +11,15 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
 
-  ros::Publisher front_detections_pub = n.advertise<std_msgs::String>("front_detections", 1000);
+  ros::Publisher front_detections_pub = n.advertise<sensor_msgs::PointCloud>("front_detections", 1000);
 
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(30);
 
   BallDetector ballDetector("front_camera");
 
   if (ballDetector.initialize_camera() == -1)
   {
-        return -1;
+    return -1;
   }
 
   long count = 0;

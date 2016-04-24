@@ -100,7 +100,10 @@ std::vector<Point2f>* BallDetector::processFrame()
   Mat orig_frame;
   cam_->read(orig_frame); // get a new frame from camera
   if (show_gui_)
+  {
     imshow("Original", orig_frame);
+    cv::waitKey(1);
+  }
   //GaussianBlur(orig_frame, orig_frame, Size(7,7), 1.5, 1.5);
   Mat hsv_frame;
   cvtColor(orig_frame, hsv_frame, COLOR_BGR2HSV);
@@ -131,6 +134,8 @@ std::vector<Point2f>* BallDetector::processFrame()
 
   findContours(morph_frame, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
+  ROS_DEBUG_STREAM_NAMED("processFrame", "[front_camera] Extracted " << contours.size() << " contours.");
+
   std::vector<Point2f>* detected_balls = processContours(contours, hierarchy, orig_frame);
 
   return detected_balls;
@@ -144,7 +149,7 @@ std::vector<Point2f>* BallDetector::processContours(std::vector<std::vector<Poin
   std::vector<float> circle_radius(contours.size());
   std::vector<float> contour_area(contours.size());
   float min_area_ratio_float = min_area_ratio_ / 100.0;
-  std::vector<Point2f>* detected_balls;
+  std::vector<Point2f>* detected_balls = new std::vector<Point2f>;
   for (int i = 0; i < contours.size(); i++)
   {
     //compute the areas of the contours

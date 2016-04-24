@@ -2,7 +2,7 @@
 #include "std_msgs/String.h"
 
 #include <opencv2/opencv.hpp>
-//#include <highgui.h>
+#include <highgui.h>
 
 #define DEBUG
 
