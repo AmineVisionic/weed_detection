@@ -1,0 +1,16 @@
+show_gui: true
+camera_device: 0
+
+H_min: 10
+H_max: 21
+
+S_min: 145
+S_max: 255
+
+V_min: 188
+V_max: 255
+
+min_contour_area: 800
+min_contour_radius: 29
+max_contour_radius: 50
+min_area_ratio: 0.5
