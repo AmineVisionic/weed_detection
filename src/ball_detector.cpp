@@ -19,6 +19,7 @@ int BallDetector::initialize_camera()
     ROS_FATAL_STREAM("Camera device" << camera_device_ <<"not found.");
     return -1;
   }
+  ROS_INFO_STREAM("Camera fps: " << cam_->get(CV_CAP_PROP_FPS));
   return 0;
 }
 
@@ -90,8 +91,8 @@ void BallDetector::settingsWindow()
   createTrackbar("V_max", "Settings", &V_max_, 255);
 
   createTrackbar("min_contour_area", "Settings", &min_contour_area_, 5000);
-  createTrackbar("min_contour_radius", "Settings", &min_contour_circle_radius_, 500);
-  createTrackbar("max_contour_radius", "Settings", &max_contour_circle_radius_, 500);
+  createTrackbar("min_contour_radius", "Settings", &min_contour_circle_radius_, 50);
+  createTrackbar("max_contour_radius", "Settings", &max_contour_circle_radius_, 50);
   createTrackbar("min_area_ratio", "Settings", &min_area_ratio_, 100);
 }
 
