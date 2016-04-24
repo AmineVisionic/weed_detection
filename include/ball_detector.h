@@ -54,6 +54,6 @@ private:
 
   std::string name_;
 
-  cv::VideoCapture capture_;
+  cv::VideoCapture* cam_;
 
 };

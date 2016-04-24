@@ -16,9 +16,11 @@ int main(int argc, char **argv)
   ros::Rate loop_rate(10);
 
   BallDetector ballDetector("front_camera");
-  if (ballDetector.initialize_camera() == -1)
-    return -1;
 
+  if (ballDetector.initialize_camera() == -1)
+  {
+        return -1;
+  }
 
   long count = 0;
   while (ros::ok())

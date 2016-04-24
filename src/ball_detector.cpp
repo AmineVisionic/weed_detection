@@ -13,11 +13,12 @@ BallDetector::BallDetector(std::string name)
 
 int BallDetector::initialize_camera()
 {
-  VideoCapture capture_(camera_device_); // start the camera
-  if (!capture_.isOpened())  // check if camera works
-    ROS_ERROR("Camera device not found.");
-    ROS_WARN("Camera device not found.");
+  cam_ = new VideoCapture(camera_device_);
+  if (!cam_->isOpened())  // check if camera works
+  {
+    ROS_FATAL_STREAM("Camera device" << camera_device_ <<"not found.");
     return -1;
+  }
   return 0;
 }
 
@@ -97,7 +98,7 @@ void BallDetector::settingsWindow()
 std::vector<Point2f>* BallDetector::processFrame()
 {
   Mat orig_frame;
-  capture_.read(orig_frame); // get a new frame from camera
+  cam_->read(orig_frame); // get a new frame from camera
   if (show_gui_)
     imshow("Original", orig_frame);
   //GaussianBlur(orig_frame, orig_frame, Size(7,7), 1.5, 1.5);
