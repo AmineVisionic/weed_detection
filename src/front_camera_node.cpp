@@ -1,8 +1,10 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "sensor_msgs/PointCloud.h"
+#include "geometry_msgs/Pose.h"
 
 #include "ball_detector.h"
+#include "weed_detection/detected_balls.h"
 using namespace cv;
 
 int main(int argc, char **argv)
@@ -11,7 +13,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
 
-  ros::Publisher front_detections_pub = n.advertise<sensor_msgs::PointCloud>("front_detections", 1000);
+  ros::Publisher front_detections_pub = n.advertise<weed_detection::detected_balls>("front_detections", 1000);
 
   ros::Rate loop_rate(30);
 
@@ -25,15 +27,23 @@ int main(int argc, char **argv)
   long count = 0;
   while (ros::ok())
   {
-    const std::vector<cv::Point2f>* detected_balls = ballDetector.processFrame();
-    sensor_msgs::PointCloud msg;
+    vector<tracked_ball>* balls = ballDetector.processFrame();
+
+    weed_detection::detected_balls msg;
     msg.header.seq = count;
-    for (int i = 0; i < detected_balls->size(); i++)
+    for (int i = 0; i < balls->size(); i++)
     {
-      geometry_msgs::Point32 point;
-      point.x = detected_balls->at(i).x;
-      point.y = detected_balls->at(i).y;
-      msg.points.push_back(point);
+      msg.ids.push_back(balls->at(i).id);
+
+      geometry_msgs::Pose pose;
+      pose.position.x = balls->at(i).location.x;
+      pose.position.y = balls->at(i).location.y;
+      msg.locations.push_back(pose);
+
+      geometry_msgs::Pose predict;
+      predict.position.x = balls->at(i).prediction.x;
+      predict.position.y = balls->at(i).prediction.y;
+      msg.predictions.push_back(predict);
     }
     front_detections_pub.publish(msg);
 

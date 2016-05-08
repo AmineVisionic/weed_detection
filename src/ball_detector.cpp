@@ -9,6 +9,8 @@ BallDetector::BallDetector(std::string name)
   loadParameters();
   if (show_gui_)
     settingsWindow();
+
+  tracker_ = new CTracker(0.2,0.5,60.0,10,10);
 }
 
 int BallDetector::initialize_camera()
@@ -96,7 +98,7 @@ void BallDetector::settingsWindow()
   createTrackbar("min_area_ratio", "Settings", &min_area_ratio_, 100);
 }
 
-std::vector<Point2f>* BallDetector::processFrame()
+vector<tracked_ball>* BallDetector::processFrame()
 {
   Mat orig_frame;
   cam_->read(orig_frame); // get a new frame from camera
@@ -111,6 +113,7 @@ std::vector<Point2f>* BallDetector::processFrame()
 
   //Extraction of areas of the right color
   Mat thres_frame;
+
   inRange(hsv_frame, Scalar(H_min_, S_min_, V_min_), Scalar(H_max_, S_max_, V_max_), thres_frame);
 
   if (show_gui_)
@@ -137,14 +140,61 @@ std::vector<Point2f>* BallDetector::processFrame()
 
   ROS_DEBUG_STREAM_NAMED("processFrame", "[front_camera] Extracted " << contours.size() << " contours.");
 
-  std::vector<Point2f>* detected_balls = processContours(contours, hierarchy, orig_frame);
+  std::vector<Point2f>* detected_balls = processContours(contours, hierarchy, &orig_frame);
 
-  return detected_balls;
+  std::vector<Point2d> detected_balls_d;
+  for (int iter = 0 ; iter < (int)detected_balls->size() ; iter++)
+    {
+      detected_balls_d.push_back((cv::Point2d)detected_balls->at(iter));
+    }
+
+  if (detected_balls->size() > 0)
+  {
+    tracker_->Update(detected_balls_d);
+  }
+
+  ROS_DEBUG_STREAM_NAMED("processFrame", "[front_camera] Computed " << tracker_->tracks.size() << " tracks.");
+
+  Scalar Colors[]={Scalar(255,0,0),Scalar(0,255,0),Scalar(0,0,255),Scalar(255,255,0),Scalar(0,255,255),Scalar(255,0,255),Scalar(255,127,255),Scalar(127,0,255),Scalar(127,0,127)};
+
+  for(int i=0;i<tracker_->tracks.size();i++)
+  {
+          if(tracker_->tracks[i]->trace.size()>1)
+          {
+                  for(int j=0;j<tracker_->tracks[i]->trace.size()-1;j++)
+                  {
+                          line(orig_frame,tracker_->tracks[i]->trace[j],tracker_->tracks[i]->trace[j+1],Colors[tracker_->tracks[i]->track_id%9],2,CV_AA);
+                  }
+                  putText(orig_frame,
+                          static_cast<ostringstream*>( &(ostringstream() << tracker_->tracks[i]->track_id) )->str(), (Point)*tracker_->tracks[i]->trace.begin(),
+                          FONT_HERSHEY_SIMPLEX,
+                          0.5,
+                          Scalar(255, 255, 255),
+                          2,
+                          8);
+          }
+  }
+  if (show_gui_){
+        imshow("Extracted balls", orig_frame);
+      }
+
+  vector<tracked_ball>* tracked_balls = new vector<tracked_ball>;
+  for(int i=0;i<tracker_->tracks.size();i++)
+  {
+    if (tracker_->tracks.at(i)->trace.size() < 5)
+      continue;
+    tracked_ball new_ball;
+    new_ball.id = tracker_->tracks.at(i)->track_id;
+    new_ball.location = tracker_->tracks.at(i)->trace.at(tracker_->tracks.at(i)->trace.size() - 1);
+    new_ball.prediction = tracker_->tracks.at(i)->KF->LastResult;
+    tracked_balls->push_back(new_ball);
+  }
+  return tracked_balls;
 }
 
 std::vector<Point2f>* BallDetector::processContours(std::vector<std::vector<Point> > contours,
                                                                  std::vector<cv::Vec4i> hierarchy,
-                                                                 Mat frame)
+                                                                 Mat* frame)
 {
   std::vector<Point2f> circle_midpoint(contours.size());
   std::vector<float> circle_radius(contours.size());
@@ -174,14 +224,11 @@ std::vector<Point2f>* BallDetector::processContours(std::vector<std::vector<Poin
     if (show_gui_){
       Scalar color = Scalar(255, 255, 255);
       Scalar color2 = Scalar(255, 0, 0);
-      drawContours(frame, contours, i, color, 2, 8, hierarchy, 0, Point());
-      circle(frame, circle_midpoint.at(i), 4, color2, -1, 8, 0);
-      circle(frame, circle_midpoint.at(i), circle_radius.at(i), color2, 2, 8, 0);
+      drawContours(*frame, contours, i, color, 2, 8, hierarchy, 0, Point());
+      circle(*frame, circle_midpoint.at(i), 4, color2, -1, 8, 0);
+      circle(*frame, circle_midpoint.at(i), circle_radius.at(i), color2, 2, 8, 0);
     }
   }
 
-  if (show_gui_){
-        imshow("Extracted balls", frame);
-      }
   return detected_balls;
 }

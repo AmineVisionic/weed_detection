@@ -4,7 +4,15 @@
 #include <opencv2/opencv.hpp>
 #include <highgui.h>
 
+#include "Ctracker.h"
+
 #define DEBUG
+
+struct tracked_ball{
+  size_t id;
+  Point2d location;
+  Point2d prediction;
+};
 
 class BallDetector{
 public:
@@ -18,7 +26,7 @@ public:
   /*
    * Applies various filters on the image to extract the areas of the right color.
    */
-  std::vector<cv::Point2f>* processFrame();
+  vector<tracked_ball>* processFrame();
 
 
 private:
@@ -35,7 +43,7 @@ private:
    */
   std::vector<cv::Point2f>* processContours(std::vector<std::vector<cv::Point> > contours,
                                                          std::vector<cv::Vec4i> hierarchy,
-                                                         cv::Mat frame);
+                                                         cv::Mat* frame);
 
   ros::NodeHandle nh_;
 
@@ -55,5 +63,7 @@ private:
   std::string name_;
 
   cv::VideoCapture* cam_;
+
+  CTracker* tracker_;
 
 };

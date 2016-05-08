@@ -5,14 +5,28 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
   sensor_msgs
+  message_generation
 )
 
 find_package(OpenCV REQUIRED)
 
 
-catkin_package()
+add_message_files(
+  FILES
+  detected_balls.msg
+)
 
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
+
+catkin_package(
+  CATKIN_DEPENDS message_runtime
+)
 ###########
 ## Build ##
 ###########
@@ -32,17 +46,27 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 # add_dependencies(weed_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(front_camera_node src/front_camera_node.cpp src/ball_detector.cpp)
+add_executable(front_camera_node src/front_camera_node.cpp src/ball_detector.cpp src/Ctracker.cpp src/HungarianAlg.cpp src/Kalman.cpp)
 
+add_executable(detection_manager src/detection_manager.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(front_camera_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_dependencies(detection_manager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(front_camera_node
    ${OpenCV_LIBS}
    ${catkin_LIBRARIES}
  )
+
+ target_link_libraries(detection_manager
+   ${OpenCV_LIBS}
+   ${catkin_LIBRARIES}
+ )
+
+# target_compile_options(detection_manager PRIVATE "-std=c++11")
 
 #############
 ## Install ##
