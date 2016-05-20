@@ -5,4 +5,12 @@
 		<rosparam command="load" file="$(find weed_detection)/config/front_camera_node.yaml"/>
 	</node>
 
+  <node pkg="weed_detection" type="arm_camera_node" name="arm_camera_node" output="screen" >
+    <rosparam command="load" file="$(find weed_detection)/config/arm_camera_node.yaml"/>
+  </node>
+
+  <node pkg="weed_detection" type="detection_manager" name="detection_manager" output="screen" >
+    <rosparam command="load" file="$(find weed_detection)/config/detection_manager.yaml"/>
+  </node>
+
 </launch>

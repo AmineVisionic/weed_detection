@@ -48,15 +48,24 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 ## Declare a C++ executable
 add_executable(front_camera_node src/front_camera_node.cpp src/ball_detector.cpp src/Ctracker.cpp src/HungarianAlg.cpp src/Kalman.cpp)
 
+add_executable(arm_camera_node src/arm_camera_node.cpp src/ball_detector.cpp src/Ctracker.cpp src/HungarianAlg.cpp src/Kalman.cpp)
+
 add_executable(detection_manager src/detection_manager.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(front_camera_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_dependencies(arm_camera_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 add_dependencies(detection_manager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(front_camera_node
+   ${OpenCV_LIBS}
+   ${catkin_LIBRARIES}
+ )
+
+ target_link_libraries(arm_camera_node
    ${OpenCV_LIBS}
    ${catkin_LIBRARIES}
  )

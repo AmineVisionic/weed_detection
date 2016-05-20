@@ -10,7 +10,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/String.h>
-#include <std_msgs/Float64.h>
+#include <std_msgs/Float32.h>
 #include <geometry_msgs/Pose2D.h>
 #include <sensor_msgs/JointState.h>
 #include <std_srvs/Trigger.h>
@@ -23,7 +23,7 @@ struct registered_ball {
   float predicted_orientation;
   float distance_to_reach;
   float extra_distance_by_offset;
-  bool sprayed = false;
+  bool sprayed;
   double last_update;
   /*
    * Camera that catched the ball.
@@ -65,6 +65,7 @@ void processDatabase();
 void reachBall();
 
 ros::NodeHandle node_;
+ros::NodeHandle pnh_;
 ros::Subscriber front_detections_sub_;
 ros::Subscriber arm_detections_sub_;
 ros::Publisher move_to_upcoming_pub_;

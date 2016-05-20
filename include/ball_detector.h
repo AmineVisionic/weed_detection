@@ -59,6 +59,14 @@ private:
   int max_contour_circle_radius_;
   int min_area_ratio_;
   bool show_gui_;
+  double kalman_dt_;
+  double kalman_accel_noise_mag_;
+  double hungarian_dist_thres_;
+  int hungarian_max_skipped_frames_;
+
+  int kalman_dt_int_;
+  int kalman_accel_noise_mag_int_;
+  int hungarian_dist_thres_int_;
 
   std::string name_;
 

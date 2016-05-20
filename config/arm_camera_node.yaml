@@ -1,10 +1,10 @@
 show_gui: true
-camera_device: 0
+camera_device: 1
 
 H_min: 10
 H_max: 21
 
-S_min: 85
+S_min: 145
 S_max: 255
 
 V_min: 188
@@ -19,3 +19,6 @@ kalman_dt: 0.2
 kalman_accel_noise_mag: 0.5
 hungarian_dist_thres: 60.0
 hungarian_max_skipped_frames: 10
+
+arm_camera_position_x: 0.0
+arm_camera_position_y: 0.0

@@ -10,7 +10,8 @@ BallDetector::BallDetector(std::string name)
   if (show_gui_)
     settingsWindow();
 
-  tracker_ = new CTracker(0.2,0.5,60.0,10,10);
+//  tracker_ = new CTracker(0.2,0.5,60.0,10,10);
+  tracker_ = new CTracker(kalman_dt_, kalman_accel_noise_mag_, hungarian_dist_thres_, hungarian_max_skipped_frames_, 10);
 }
 
 int BallDetector::initialize_camera()
@@ -18,10 +19,10 @@ int BallDetector::initialize_camera()
   cam_ = new VideoCapture(camera_device_);
   if (!cam_->isOpened())  // check if camera works
   {
-    ROS_FATAL_STREAM("Camera device" << camera_device_ <<"not found.");
+    ROS_FATAL_STREAM("[" << name_ << "] Camera device " << camera_device_ << " not found.");
     return -1;
   }
-  ROS_INFO_STREAM("Camera fps: " << cam_->get(CV_CAP_PROP_FPS));
+  ROS_INFO_STREAM("[" << name_ << "] Camera fps: " << cam_->get(CV_CAP_PROP_FPS));
   return 0;
 }
 
@@ -77,6 +78,25 @@ void BallDetector::loadParameters()
     ROS_WARN_STREAM("[" << name_ << "] Used default parameter for show_gui [true]");
   nh_.param("show_gui", show_gui_, true);
 
+  if (!nh_.hasParam("kalman_dt"))
+    ROS_WARN_STREAM("[" << name_ << "] Used default parameter for kalman_dt [0]");
+  nh_.param("kalman_dt", kalman_dt_, 0.2);
+
+  if (!nh_.hasParam("kalman_accel_noise_mag"))
+    ROS_WARN_STREAM("[" << name_ << "] Used default parameter for kalman_accel_noise_mag [0]");
+  nh_.param("kalman_accel_noise_mag", kalman_accel_noise_mag_, 0.5);
+
+  if (!nh_.hasParam("hungarian_dist_thres"))
+    ROS_WARN_STREAM("[" << name_ << "] Used default parameter for hungarian_dist_thres [0]");
+  nh_.param("hungarian_dist_thres", hungarian_dist_thres_, 60.0);
+
+  if (!nh_.hasParam("hungarian_max_skipped_frames"))
+    ROS_WARN_STREAM("[" << name_ << "] Used default parameter for hungarian_max_skipped_frames_ [0]");
+  nh_.param("hungarian_max_skipped_frames", hungarian_max_skipped_frames_, 10);
+
+  kalman_dt_int_ = kalman_dt_ * 100;
+  kalman_accel_noise_mag_int_ = kalman_accel_noise_mag_ * 100;
+  hungarian_dist_thres_int_ = hungarian_dist_thres_ * 100;
   if (show_gui_)
     settingsWindow();
 }
@@ -96,6 +116,11 @@ void BallDetector::settingsWindow()
   createTrackbar("min_contour_radius", "Settings", &min_contour_circle_radius_, 50);
   createTrackbar("max_contour_radius", "Settings", &max_contour_circle_radius_, 50);
   createTrackbar("min_area_ratio", "Settings", &min_area_ratio_, 100);
+
+  createTrackbar("kalman_dt", "Settings", &kalman_dt_int_, 100);
+  createTrackbar("kalman_accel_noise_mag", "Settings", &kalman_accel_noise_mag_int_, 100);
+  createTrackbar("hungarian_dist_thres", "Settings", &hungarian_dist_thres_int_, 10000);
+  createTrackbar("hungarian_max_skipped_frames", "Settings", &hungarian_max_skipped_frames_, 100);
 }
 
 vector<tracked_ball>* BallDetector::processFrame()
@@ -150,6 +175,10 @@ vector<tracked_ball>* BallDetector::processFrame()
 
   if (detected_balls->size() > 0)
   {
+    tracker_->dt = kalman_dt_int_ / 100.0;
+    tracker_->Accel_noise_mag = kalman_accel_noise_mag_int_ / 100.0;
+    tracker_->dist_thres = hungarian_dist_thres_int_ / 100.0;
+    tracker_->maximum_allowed_skipped_frames = hungarian_max_skipped_frames_;
     tracker_->Update(detected_balls_d);
   }
 
