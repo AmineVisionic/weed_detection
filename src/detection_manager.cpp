@@ -30,7 +30,7 @@ void detectionManager::arm_state_callback(const sensor_msgs::JointState::ConstPt
 
 void detectionManager::arm_detection_callback(const geometry_msgs::Pose2D::ConstPtr& msg)
 {
-  nearest_ball_pose_ = msg;
+  nearest_ball_pose_ = *msg;
 }
 
 float detectionManager::computeOrientation(geometry_msgs::Pose pose)
@@ -53,7 +53,9 @@ void detectionManager::reachBall()
   if(abs(nearest_ball_pose_.x - sprayer_pose_.x) < spray_threshold_ &&
       abs(nearest_ball_pose_.y - sprayer_pose_.y) < spray_threshold_)
   {
-    if (spray_.call("spray"))
+    std_srvs::Trigger spray;
+
+    if (spray_.call(spray))
     {
       nearest_ball->sprayed = true;
     }
