@@ -1,6 +1,6 @@
-ball_life: 2000
-arm_lenght: 500
-y_calibration_offset_: 0
+ball_life: 2
+arm_lenght: 400
+y_calibration_offset_: 350
 stop_threshold_: 0
 slow_threshold_: 0
 normal_vel_: 0

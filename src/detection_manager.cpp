@@ -7,7 +7,7 @@ detectionManager::detectionManager() : arm_angle_(0), pnh_("~")
 {
   nearest_ball = NULL;
   ball_life = 2000;
-  arm_lenght = 500;
+  arm_lenght = 400;
   y_calibration_offset_ = 0;
   stop_threshold_ = 0;
   slow_threshold_ = 0;
@@ -16,16 +16,16 @@ detectionManager::detectionManager() : arm_angle_(0), pnh_("~")
   spray_threshold_ = 0;
 
   if (!pnh_.hasParam("ball_life"))
-    ROS_WARN_STREAM("[Detection Manager] Used default parameter for ball_life [2000]");
-  pnh_.param("ball_life", ball_life, 2000);
+    ROS_WARN_STREAM("[Detection Manager] Used default parameter for ball_life [2]");
+  pnh_.param("ball_life", ball_life, 2);
 
   if (!pnh_.hasParam("arm_lenght"))
-    ROS_WARN_STREAM("[Detection Manager] Used default parameter for arm_lenght [500]");
-  pnh_.param("arm_lenght", arm_lenght, 500);
+    ROS_WARN_STREAM("[Detection Manager] Used default parameter for arm_lenght [400]");
+  pnh_.param("arm_lenght", arm_lenght, 400);
 
   if (!pnh_.hasParam("y_calibration_offset_"))
-    ROS_WARN_STREAM("[Detection Manager] Used default parameter for y_calibration_offset_ [0]");
-  pnh_.param("y_calibration_offset_", y_calibration_offset_, 0);
+    ROS_WARN_STREAM("[Detection Manager] Used default parameter for y_calibration_offset_ [350]");
+  pnh_.param("y_calibration_offset_", y_calibration_offset_, 350);
 
   if (!pnh_.hasParam("stop_threshold_"))
     ROS_WARN_STREAM("[Detection Manager] Used default parameter for stop_threshold_ [0]");
@@ -102,12 +102,12 @@ void detectionManager::reachBall()
 
 void detectionManager::processNearestBall()
 {
-  ROS_DEBUG_STREAM_NAMED("processNearestBall", "[processNearestBall] Processing...");
   if (nearest_ball == NULL)
   {
     ROS_DEBUG_STREAM_NAMED("processNearestBall", "[processNearestBall] Skipping because there is no nearest_ball");
     return;
   }
+  ROS_DEBUG_STREAM_NAMED("processNearestBall", "[processNearestBall] Distance to reach nearest ball: " << nearest_ball->distance_to_reach);
   // Slow down or stop the robot depending on distance_to_reach
   if (nearest_ball->distance_to_reach < stop_threshold_)
   {
@@ -123,7 +123,7 @@ void detectionManager::processNearestBall()
     robot_vel_.publish(msg);
   }
 
-  ROS_DEBUG_STREAM_NAMED("processNearestBall", "[processNearestBall] ...");
+  //ROS_DEBUG_STREAM_NAMED("processNearestBall", "[processNearestBall] ...");
   // If nearest ball is outside the working range of the arm
   if (nearest_ball->distance_to_reach > nearest_ball->extra_distance_by_offset)
   {
@@ -139,13 +139,15 @@ void detectionManager::processNearestBall()
 
 void detectionManager::processDatabase()
 {
-  ROS_DEBUG_STREAM_NAMED("processDatabase", "[processDatabase] Processing...");
+  ROS_DEBUG_STREAM_NAMED("processDatabase", "[processDatabase] Processing " << ball_database_.size() << " balls...");
   for (int i = 0; i < ball_database_.size(); i++)
   {
+    ROS_DEBUG_STREAM_NAMED("processDatabase", ball_database_.at(i).last_update - ros::Time::now().toSec());
     //Delete ball if outdated
-    if (ball_database_.at(i).last_update - ros::Time::now().toSec() > ball_life)
+    if (ros::Time::now().toSec() - ball_database_.at(i).last_update > ball_life)
       {
-      delete &ball_database_.at(i);
+      ROS_DEBUG_STREAM_NAMED("processDatabase", "[processDatabase] Deleted a ball");
+      //delete &ball_database_.at(i);
       ball_database_.erase(ball_database_.begin() + i);
       i--;
       }
@@ -159,10 +161,10 @@ void detectionManager::processDatabase()
       else if ((ball_database_.at(i).distance_to_reach < nearest_ball->distance_to_reach) && !ball_database_.at(i).sprayed)
       {
         nearest_ball = &ball_database_.at(i);
+        ROS_DEBUG_STREAM_NAMED("processDatabase", "[processDatabase] Nearest ball is " << nearest_ball->ID);
       }
     }
   }
-
   processNearestBall();
 }
 
@@ -186,8 +188,8 @@ void detectionManager::front_detection_callback(const weed_detection::detected_b
        * Compute the distance in movement direction from the ball to the working range of the arm
        */
         it->extra_distance_by_offset = arm_lenght - sqrt(pow(arm_lenght, 2) -
-                                                         pow(msg->predictions.at(i).position.x, 2));
-        it->distance_to_reach = (msg->locations.at(i).position.y - y_calibration_offset_) + it->extra_distance_by_offset;
+                                                         pow(abs(msg->predictions.at(i).position.x - 320), 2));
+        it->distance_to_reach = (y_calibration_offset_ - msg->locations.at(i).position.y) + it->extra_distance_by_offset;
                                      ;
         it->predicted_orientation = computeOrientation(msg->predictions.at(i));
         it->last_update = ros::Time::now().toSec();
@@ -196,8 +198,9 @@ void detectionManager::front_detection_callback(const weed_detection::detected_b
     {
       registered_ball new_entry;
       new_entry.ID = msg->ids.at(i);
-      new_entry.distance_to_reach = (msg->locations.at(i).position.y - y_calibration_offset_) + (arm_lenght - sqrt(pow(arm_lenght, 2) -
-                                                                                         pow(msg->predictions.at(i).position.x, 2)));
+      new_entry.extra_distance_by_offset = arm_lenght - sqrt(pow(arm_lenght, 2) -
+                                                             pow(abs(msg->predictions.at(i).position.x - 320), 2));
+      new_entry.distance_to_reach = (y_calibration_offset_ - msg->locations.at(i).position.y) + new_entry.extra_distance_by_offset;
       new_entry.predicted_orientation = computeOrientation(msg->predictions.at(i));
       new_entry.last_update = ros::Time::now().toSec();
       new_entry.sprayed = false;

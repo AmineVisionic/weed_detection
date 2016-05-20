@@ -44,6 +44,20 @@ max_trace_length=_max_trace_length;
 // ---------------------------------------------------------------------------
 void CTracker::Update(vector<Point2d>& detections)
 {
+        if (detections.size() == 0)
+        {
+          for(int i=0;i<tracks.size();i++)
+                  {
+            tracks[i]->skipped_frames++;
+            if(tracks[i]->skipped_frames>maximum_allowed_skipped_frames)
+                            {
+                                    delete tracks[i];
+                                    tracks.erase(tracks.begin()+i);
+                                    i--;
+                            }
+                  }
+          return;
+        }
 	// -----------------------------------
 	// If there is no tracks yet, then every point begins its own track.
 	// -----------------------------------
@@ -58,17 +72,16 @@ void CTracker::Update(vector<Point2d>& detections)
 	}
 
 	// -----------------------------------
-	// Çäåñü òðåêè óæå åñòü â ëþáîì ñëó÷àå
+	//
 	// -----------------------------------
-	int N=tracks.size();		// òðåêè
-	int M=detections.size();	// äåòåêòû
+	int N=tracks.size();		//
+	int M=detections.size();	//
 
-	// Ìàòðèöà ðàññòîÿíèé îò N-íîãî òðåêà äî M-íîãî äåòåêòà.
 	vector< vector<double> > Cost(N,vector<double>(M));
-	vector<int> assignment; // íàçíà÷åíèÿ
+	vector<int> assignment;
 
 	// -----------------------------------
-	// Òðåêè óæå åñòü, ñîñòàâèì ìàòðèöó ðàññòîÿíèé
+	//
 	// -----------------------------------
 	double dist;
 	for(int i=0;i<tracks.size();i++)
@@ -113,7 +126,6 @@ void CTracker::Update(vector<Point2d>& detections)
 		}
 
 	}
-
 	// -----------------------------------
 	// If track didn't get detects long time, remove it.
 	// -----------------------------------

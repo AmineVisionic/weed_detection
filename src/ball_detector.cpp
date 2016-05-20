@@ -173,14 +173,14 @@ vector<tracked_ball>* BallDetector::processFrame()
       detected_balls_d.push_back((cv::Point2d)detected_balls->at(iter));
     }
 
-  if (detected_balls->size() > 0)
-  {
+//  if (detected_balls->size() > 0)
+//  {
     tracker_->dt = kalman_dt_int_ / 100.0;
     tracker_->Accel_noise_mag = kalman_accel_noise_mag_int_ / 100.0;
     tracker_->dist_thres = hungarian_dist_thres_int_ / 100.0;
     tracker_->maximum_allowed_skipped_frames = hungarian_max_skipped_frames_;
     tracker_->Update(detected_balls_d);
-  }
+
 
   ROS_DEBUG_STREAM_NAMED("processFrame", "[front_camera] Computed " << tracker_->tracks.size() << " tracks.");
 
