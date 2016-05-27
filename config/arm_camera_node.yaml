@@ -1,5 +1,5 @@
-show_gui: true
-camera_device: 1
+show_gui: false
+camera_device: 2
 
 H_min: 10
 H_max: 21

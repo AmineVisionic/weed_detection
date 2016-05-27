@@ -68,6 +68,9 @@ private:
   int kalman_accel_noise_mag_int_;
   int hungarian_dist_thres_int_;
 
+  int detect_manager_yoffset_;
+  int detect_manager_arm_lenght_;
+
   std::string name_;
 
   cv::VideoCapture* cam_;

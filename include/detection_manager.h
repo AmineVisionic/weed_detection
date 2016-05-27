@@ -11,6 +11,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose2D.h>
 #include <sensor_msgs/JointState.h>
 #include <std_srvs/Trigger.h>
@@ -78,6 +79,7 @@ std::vector<registered_ball> ball_database_;
 int ball_life;
 int arm_lenght;
 int y_calibration_offset_;
+int discard_threshold_;
 int stop_threshold_;
 int slow_threshold_;
 int normal_vel_;

@@ -47,12 +47,16 @@ detectionManager::detectionManager() : arm_angle_(0), pnh_("~")
     ROS_WARN_STREAM("[Detection Manager] Used default parameter for spray_threshold_ [0]");
   pnh_.param("spray_threshold_", spray_threshold_, 0.0);
 
+  if (!pnh_.hasParam("discard_threshold_"))
+    ROS_WARN_STREAM("[Detection Manager] Used default parameter for discard_threshold_ [-10]");
+  pnh_.param("discard_threshold_", discard_threshold_, -10);
+
 
   front_detections_sub_ = node_.subscribe<weed_detection::detected_balls>("front_detections", 1, &detectionManager::front_detection_callback, this);
   arm_detections_sub_ = node_.subscribe<geometry_msgs::Pose2D>("arm_detections", 1, &detectionManager::arm_detection_callback, this);
   move_to_upcoming_pub_ = node_.advertise<std_msgs::Float32>("move_to_upcoming", 1, true);
   move_precisely_ = node_.advertise<geometry_msgs::Pose2D>("move_precisely", 1, true);
-  robot_vel_ = node_.advertise<std_msgs::Float32>("robot_velocity", 1, true);
+  robot_vel_ = node_.advertise<std_msgs::Float64>("robot_velocity", 1, true);
   arm_state_sub_ = node_.subscribe<sensor_msgs::JointState>("arm_state", 1, &detectionManager::arm_state_callback, this);
   spray_ = node_.serviceClient<std_srvs::Trigger>("spray");
 }
@@ -79,7 +83,7 @@ void detectionManager::reachBall()
   {
     std_msgs::Float32 msg;
     msg.data = nearest_ball->predicted_orientation;
-  move_to_upcoming_pub_.publish(msg);
+    move_to_upcoming_pub_.publish(msg);
   }
   else
   {
@@ -111,14 +115,14 @@ void detectionManager::processNearestBall()
   // Slow down or stop the robot depending on distance_to_reach
   if (nearest_ball->distance_to_reach < stop_threshold_)
   {
-    std_msgs::Float32 msg;
+    std_msgs::Float64 msg;
     msg.data = 0.0;
     robot_vel_.publish(msg);
   }
   else if (nearest_ball->distance_to_reach < slow_threshold_)
   {
     float vel_ratio = (float)nearest_ball->distance_to_reach / (slow_threshold_ - stop_threshold_);
-    std_msgs::Float32 msg;
+    std_msgs::Float64 msg;
     msg.data = normal_vel_ * vel_ratio;
     robot_vel_.publish(msg);
   }
@@ -158,7 +162,7 @@ void detectionManager::processDatabase()
       {
         nearest_ball = &ball_database_.at(i);
       }
-      else if ((ball_database_.at(i).distance_to_reach < nearest_ball->distance_to_reach) && !ball_database_.at(i).sprayed)
+      else if ((ball_database_.at(i).distance_to_reach < nearest_ball->distance_to_reach) && ball_database_.at(i).distance_to_reach > discard_threshold_ && !ball_database_.at(i).sprayed)
       {
         nearest_ball = &ball_database_.at(i);
         ROS_DEBUG_STREAM_NAMED("processDatabase", "[processDatabase] Nearest ball is " << nearest_ball->ID);

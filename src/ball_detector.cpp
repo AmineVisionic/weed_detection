@@ -94,6 +94,14 @@ void BallDetector::loadParameters()
     ROS_WARN_STREAM("[" << name_ << "] Used default parameter for hungarian_max_skipped_frames_ [0]");
   nh_.param("hungarian_max_skipped_frames", hungarian_max_skipped_frames_, 10);
 
+  if (!nh_.hasParam("detect_manager_arm_lenght"))
+    ROS_WARN_STREAM("[" << name_ << "] Used default parameter for detect_manager_arm_lenght [0]");
+  nh_.param("detect_manager_arm_lenght", detect_manager_arm_lenght_, 0);
+
+  if (!nh_.hasParam("detect_manager_yoffset"))
+    ROS_WARN_STREAM("[" << name_ << "] Used default parameter for detect_manager_yoffset [0]");
+  nh_.param("detect_manager_yoffset", detect_manager_yoffset_, 0);
+
   kalman_dt_int_ = kalman_dt_ * 100;
   kalman_accel_noise_mag_int_ = kalman_accel_noise_mag_ * 100;
   hungarian_dist_thres_int_ = hungarian_dist_thres_ * 100;
@@ -121,6 +129,9 @@ void BallDetector::settingsWindow()
   createTrackbar("kalman_accel_noise_mag", "Settings", &kalman_accel_noise_mag_int_, 100);
   createTrackbar("hungarian_dist_thres", "Settings", &hungarian_dist_thres_int_, 10000);
   createTrackbar("hungarian_max_skipped_frames", "Settings", &hungarian_max_skipped_frames_, 100);
+
+  createTrackbar("detect_manager_arm_lenght_", "Settings", &detect_manager_arm_lenght_, 1000);
+  createTrackbar("detect_manager_yoffset_", "Settings", &detect_manager_yoffset_, 1000);
 }
 
 vector<tracked_ball>* BallDetector::processFrame()
@@ -129,6 +140,8 @@ vector<tracked_ball>* BallDetector::processFrame()
   cam_->read(orig_frame); // get a new frame from camera
   if (show_gui_)
   {
+    if (detect_manager_arm_lenght_ != 0)
+      ellipse(orig_frame, Point(orig_frame.cols / 2, detect_manager_yoffset_ + detect_manager_arm_lenght_ ), Size(detect_manager_arm_lenght_, detect_manager_arm_lenght_), 0, 0, 360, Scalar(255, 0, 0), 2, 8, 0);
     imshow("Original", orig_frame);
     cv::waitKey(1);
   }
@@ -256,7 +269,7 @@ std::vector<Point2f>* BallDetector::processContours(std::vector<std::vector<Poin
       drawContours(*frame, contours, i, color, 2, 8, hierarchy, 0, Point());
       circle(*frame, circle_midpoint.at(i), 4, color2, -1, 8, 0);
       circle(*frame, circle_midpoint.at(i), circle_radius.at(i), color2, 2, 8, 0);
-    }
+       }
   }
 
   return detected_balls;
