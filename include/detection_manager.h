@@ -10,6 +10,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Int32.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose2D.h>
@@ -21,9 +22,9 @@
 
 struct registered_ball {
   size_t ID;
-  float predicted_orientation;
-  float distance_to_reach;
-  float extra_distance_by_offset;
+  float orientation;
+  int distance_to_reach;
+  int extra_distance_by_offset;
   bool sprayed;
   double last_update;
   /*
@@ -62,18 +63,21 @@ void arm_state_callback(const sensor_msgs::JointState::ConstPtr& msg);
 private:
 float computeOrientation(geometry_msgs::Pose pose);
 void processNearestBall();
-void processDatabase();
+void processDatabase(const ros::TimerEvent& event);
 void reachBall();
+void siren();
+void spray();
 
 ros::NodeHandle node_;
 ros::NodeHandle pnh_;
 ros::Subscriber front_detections_sub_;
 ros::Subscriber arm_detections_sub_;
-ros::Publisher move_to_upcoming_pub_;
+ros::Publisher arm_target_pub_;
 ros::Publisher move_precisely_;
 ros::Publisher robot_vel_;
 ros::Subscriber arm_state_sub_;
 ros::ServiceClient spray_;
+ros::Timer process_database_timer_;
 
 std::vector<registered_ball> ball_database_;
 int ball_life;
@@ -85,6 +89,9 @@ int slow_threshold_;
 int normal_vel_;
 double arm_angle_;
 double spray_threshold_;
+double arm_drive_height_;
+double arm_spray_height_;
+double max_pan_angle_;
 std::pair<double, double> arm_pose_;
 geometry_msgs::Pose2D nearest_ball_pose_;
 geometry_msgs::Pose2D sprayer_pose_;

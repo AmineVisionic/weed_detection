@@ -54,6 +54,13 @@ int main(int argc, char **argv)
       }
       arm_detections_pub.publish(msg);
     }
+    else
+    {
+      geometry_msgs::Pose2D msg;
+      msg.x = 0;
+      msg.y = 0;
+      arm_detections_pub.publish(msg);
+    }
 
 
     ros::spinOnce();

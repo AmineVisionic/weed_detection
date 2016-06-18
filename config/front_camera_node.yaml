@@ -1,19 +1,19 @@
 show_gui: true
 camera_device: 1
 
-H_min: 10
-H_max: 21
+H_min: 141
+H_max: 11
 
-S_min: 85
+S_min: 13
 S_max: 255
 
-V_min: 188
+V_min: 0
 V_max: 255
 
-min_contour_area: 800
-min_contour_radius: 29
-max_contour_radius: 50
-min_area_ratio: 0.5
+min_contour_area: 200
+min_contour_radius: 14
+max_contour_radius: 32
+min_area_ratio: 0.0
 
 kalman_dt: 0.2
 kalman_accel_noise_mag: 0.5

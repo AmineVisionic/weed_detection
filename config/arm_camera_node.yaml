@@ -1,24 +1,24 @@
 show_gui: false
-camera_device: 2
+camera_device: 5
 
-H_min: 10
-H_max: 21
+H_min: 140
+H_max: 9
 
-S_min: 145
+S_min: 3
 S_max: 255
 
-V_min: 188
+V_min: 0
 V_max: 255
 
-min_contour_area: 800
-min_contour_radius: 29
-max_contour_radius: 50
-min_area_ratio: 0.5
+min_contour_area: 5000
+min_contour_radius: 40
+max_contour_radius: 60
+min_area_ratio: 0.4
 
 kalman_dt: 0.2
 kalman_accel_noise_mag: 0.5
 hungarian_dist_thres: 60.0
 hungarian_max_skipped_frames: 10
 
-arm_camera_position_x: 0.0
-arm_camera_position_y: 0.0
+arm_camera_position_x: 361.0
+arm_camera_position_y: 310.0

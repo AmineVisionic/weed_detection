@@ -1,9 +1,11 @@
 ball_life: 2
-arm_lenght: 400
-y_calibration_offset_: 350
+arm_lenght: 800
+y_calibration_offset_: 248
 stop_threshold_: 10
 slow_threshold_: 20
 normal_vel_: 10
-front_cam_angle_thres_: 5
-spray_threshold_: 5
-discard_threshhold: -10
+front_cam_angle_thres_: 100
+spray_threshold_: 50
+discard_threshhold: -20
+arm_drive_height: 0.0
+arm_spray_height: -0.2

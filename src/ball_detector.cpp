@@ -111,27 +111,28 @@ void BallDetector::loadParameters()
 
 void BallDetector::settingsWindow()
 {
-  namedWindow("Settings", CV_WINDOW_AUTOSIZE);
+  std::string settings_name = "Settings "+ name_;
+  namedWindow(settings_name, CV_WINDOW_AUTOSIZE);
 
-  createTrackbar("H_min", "Settings", &H_min_, 179);
-  createTrackbar("H_max", "Settings", &H_max_, 179);
-  createTrackbar("S_min", "Settings", &S_min_, 255);
-  createTrackbar("S_max", "Settings", &S_max_, 255);
-  createTrackbar("V_min", "Settings", &V_min_, 255);
-  createTrackbar("V_max", "Settings", &V_max_, 255);
+  createTrackbar("H_min", settings_name, &H_min_, 179);
+  createTrackbar("H_max", settings_name, &H_max_, 179);
+  createTrackbar("S_min", settings_name, &S_min_, 255);
+  createTrackbar("S_max", settings_name, &S_max_, 255);
+  createTrackbar("V_min", settings_name, &V_min_, 255);
+  createTrackbar("V_max", settings_name, &V_max_, 255);
 
-  createTrackbar("min_contour_area", "Settings", &min_contour_area_, 5000);
-  createTrackbar("min_contour_radius", "Settings", &min_contour_circle_radius_, 50);
-  createTrackbar("max_contour_radius", "Settings", &max_contour_circle_radius_, 50);
-  createTrackbar("min_area_ratio", "Settings", &min_area_ratio_, 100);
+  createTrackbar("min_contour_area", settings_name, &min_contour_area_, 5000);
+  createTrackbar("min_contour_radius", settings_name, &min_contour_circle_radius_, 100);
+  createTrackbar("max_contour_radius", settings_name, &max_contour_circle_radius_, 100);
+  createTrackbar("min_area_ratio", settings_name, &min_area_ratio_, 100);
 
-  createTrackbar("kalman_dt", "Settings", &kalman_dt_int_, 100);
-  createTrackbar("kalman_accel_noise_mag", "Settings", &kalman_accel_noise_mag_int_, 100);
-  createTrackbar("hungarian_dist_thres", "Settings", &hungarian_dist_thres_int_, 10000);
-  createTrackbar("hungarian_max_skipped_frames", "Settings", &hungarian_max_skipped_frames_, 100);
+  createTrackbar("kalman_dt", settings_name, &kalman_dt_int_, 100);
+  createTrackbar("kalman_accel_noise_mag", settings_name, &kalman_accel_noise_mag_int_, 100);
+  createTrackbar("hungarian_dist_thres", settings_name, &hungarian_dist_thres_int_, 10000);
+  createTrackbar("hungarian_max_skipped_frames", settings_name, &hungarian_max_skipped_frames_, 100);
 
-  createTrackbar("detect_manager_arm_lenght_", "Settings", &detect_manager_arm_lenght_, 1000);
-  createTrackbar("detect_manager_yoffset_", "Settings", &detect_manager_yoffset_, 1000);
+  createTrackbar("detect_manager_arm_lenght_", settings_name, &detect_manager_arm_lenght_, 1000);
+  createTrackbar("detect_manager_yoffset_", settings_name, &detect_manager_yoffset_, 1000);
 }
 
 vector<tracked_ball>* BallDetector::processFrame()
@@ -140,9 +141,7 @@ vector<tracked_ball>* BallDetector::processFrame()
   cam_->read(orig_frame); // get a new frame from camera
   if (show_gui_)
   {
-    if (detect_manager_arm_lenght_ != 0)
-      ellipse(orig_frame, Point(orig_frame.cols / 2, detect_manager_yoffset_ + detect_manager_arm_lenght_ ), Size(detect_manager_arm_lenght_, detect_manager_arm_lenght_), 0, 0, 360, Scalar(255, 0, 0), 2, 8, 0);
-    imshow("Original", orig_frame);
+    imshow("Original "+ name_, orig_frame);
     cv::waitKey(1);
   }
   //GaussianBlur(orig_frame, orig_frame, Size(7,7), 1.5, 1.5);
@@ -152,10 +151,21 @@ vector<tracked_ball>* BallDetector::processFrame()
   //Extraction of areas of the right color
   Mat thres_frame;
 
-  inRange(hsv_frame, Scalar(H_min_, S_min_, V_min_), Scalar(H_max_, S_max_, V_max_), thres_frame);
+  //Check if selected range goes over min and max values (to select colors around red)
+  if (H_min_ > H_max_)
+  {
+    Mat thres_frame_1, thres_frame_2;
+    inRange(hsv_frame, Scalar(0, S_min_, V_min_), Scalar(H_max_, S_max_, V_max_), thres_frame_1);
+    inRange(hsv_frame, Scalar(H_min_, S_min_, V_min_), Scalar(179, S_max_, V_max_), thres_frame_2);
+    thres_frame = thres_frame_1 + thres_frame_2;
+  }
+  else
+  {
+    inRange(hsv_frame, Scalar(H_min_, S_min_, V_min_), Scalar(H_max_, S_max_, V_max_), thres_frame);
+  }
 
-  if (show_gui_)
-    imshow("Thresholded", thres_frame);
+//  if (show_gui_)
+//    imshow("Thresholded "+ name_, thres_frame);
 
   //morphological opening
   Mat morph_frame;
@@ -166,7 +176,7 @@ vector<tracked_ball>* BallDetector::processFrame()
 //        erode(morph_frame, morph_frame, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
   if (show_gui_)
-    imshow("Thresholded", morph_frame);
+    imshow("Thresholded "+ name_, morph_frame);
 
   //TODO Maybe Canny
 
@@ -176,7 +186,7 @@ vector<tracked_ball>* BallDetector::processFrame()
 
   findContours(morph_frame, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-  ROS_DEBUG_STREAM_NAMED("processFrame", "[front_camera] Extracted " << contours.size() << " contours.");
+  ROS_DEBUG_STREAM_NAMED("processFrame", "[" << name_ << "] Extracted " << contours.size() << " contours.");
 
   std::vector<Point2f>* detected_balls = processContours(contours, hierarchy, &orig_frame);
 
@@ -195,7 +205,7 @@ vector<tracked_ball>* BallDetector::processFrame()
     tracker_->Update(detected_balls_d);
 
 
-  ROS_DEBUG_STREAM_NAMED("processFrame", "[front_camera] Computed " << tracker_->tracks.size() << " tracks.");
+  ROS_DEBUG_STREAM_NAMED("processFrame", "[" << name_ << "] Computed " << tracker_->tracks.size() << " tracks.");
 
   Scalar Colors[]={Scalar(255,0,0),Scalar(0,255,0),Scalar(0,0,255),Scalar(255,255,0),Scalar(0,255,255),Scalar(255,0,255),Scalar(255,127,255),Scalar(127,0,255),Scalar(127,0,127)};
 
@@ -217,7 +227,10 @@ vector<tracked_ball>* BallDetector::processFrame()
           }
   }
   if (show_gui_){
-        imshow("Extracted balls", orig_frame);
+        if (detect_manager_arm_lenght_ != 0)
+              ellipse(orig_frame, Point(orig_frame.cols / 2, detect_manager_yoffset_ + detect_manager_arm_lenght_ ), Size(detect_manager_arm_lenght_, detect_manager_arm_lenght_), 0, 0, 360, Scalar(255, 0, 0), 2, 8, 0);
+
+        imshow("Extracted balls "+ name_, orig_frame);
       }
 
   vector<tracked_ball>* tracked_balls = new vector<tracked_ball>;
