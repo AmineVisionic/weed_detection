@@ -2,30 +2,43 @@
 
 using namespace cv;
 
+/*
+ * Constructor
+ */
 BallDetector::BallDetector(std::string name)
 {
+  // Initialize the ballDetector
   name_ = name;
   nh_ = ros::NodeHandle("~");
   loadParameters();
+  // Open window for real time settings if param set accordingly
   if (show_gui_)
     settingsWindow();
 
 //  tracker_ = new CTracker(0.2,0.5,60.0,10,10);
+  // Initialize the tracker
   tracker_ = new CTracker(kalman_dt_, kalman_accel_noise_mag_, hungarian_dist_thres_, hungarian_max_skipped_frames_, 10);
 }
 
+/*
+ * Initialize the camera device
+ */
 int BallDetector::initialize_camera()
 {
   cam_ = new VideoCapture(camera_device_);
-  if (!cam_->isOpened())  // check if camera works
+  // Check if camera works
+  if (!cam_->isOpened())
   {
     ROS_FATAL_STREAM("[" << name_ << "] Camera device " << camera_device_ << " not found.");
     return -1;
   }
-  ROS_INFO_STREAM("[" << name_ << "] Camera fps: " << cam_->get(CV_CAP_PROP_FPS));
+  ROS_INFO_STREAM("[" << name_ << "] Camera initialized. FPS: " << cam_->get(CV_CAP_PROP_FPS));
   return 0;
 }
 
+/*
+ * Load parameters from ROS-Parameterserver
+ */
 void BallDetector::loadParameters()
 {
   if (!nh_.hasParam("camera_device"))
@@ -105,10 +118,12 @@ void BallDetector::loadParameters()
   kalman_dt_int_ = kalman_dt_ * 100;
   kalman_accel_noise_mag_int_ = kalman_accel_noise_mag_ * 100;
   hungarian_dist_thres_int_ = hungarian_dist_thres_ * 100;
-  if (show_gui_)
-    settingsWindow();
 }
 
+/*
+ * Open a window where settings can be changed.
+ * Most parameters can be adjusted in realtime but this was not tested for everything.
+ */
 void BallDetector::settingsWindow()
 {
   std::string settings_name = "Settings "+ name_;
@@ -135,23 +150,27 @@ void BallDetector::settingsWindow()
   createTrackbar("detect_manager_yoffset_", settings_name, &detect_manager_yoffset_, 1000);
 }
 
+/*
+ * Compute the positions of the balls and feed them into the Kalman-Filter
+ */
 vector<tracked_ball>* BallDetector::processFrame()
 {
   Mat orig_frame;
-  cam_->read(orig_frame); // get a new frame from camera
+  // Get a new frame from camera
+  cam_->read(orig_frame);
   if (show_gui_)
   {
     imshow("Original "+ name_, orig_frame);
     cv::waitKey(1);
   }
-  //GaussianBlur(orig_frame, orig_frame, Size(7,7), 1.5, 1.5);
   Mat hsv_frame;
+  // Convert frame to black and white
   cvtColor(orig_frame, hsv_frame, COLOR_BGR2HSV);
 
-  //Extraction of areas of the right color
+  // Extraction of areas of the right color
   Mat thres_frame;
 
-  //Check if selected range goes over min and max values (to select colors around red)
+  // Check if selected range crosses 0 and 179, as 0 and 179 are the same color. (i.e. to filter red objects)
   if (H_min_ > H_max_)
   {
     Mat thres_frame_1, thres_frame_2;
@@ -167,20 +186,21 @@ vector<tracked_ball>* BallDetector::processFrame()
 //  if (show_gui_)
 //    imshow("Thresholded "+ name_, thres_frame);
 
-  //morphological opening
+  // Morphological opening
   Mat morph_frame;
   erode(thres_frame, morph_frame, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
   dilate(morph_frame, morph_frame, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-  //morphological closing
+
+  // Morphological closing
 //        dilate(morph_frame, morph_frame, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 //        erode(morph_frame, morph_frame, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
   if (show_gui_)
-    imshow("Thresholded "+ name_, morph_frame);
+    imshow("Morphed "+ name_, morph_frame);
 
   //TODO Maybe Canny
 
-  //Vectors for storing the extracted contours
+  // Vectors for storing the extracted contours
   std::vector<std::vector<cv::Point> > contours;
   std::vector<cv::Vec4i> hierarchy;
 
@@ -190,6 +210,7 @@ vector<tracked_ball>* BallDetector::processFrame()
 
   std::vector<Point2f>* detected_balls = processContours(contours, hierarchy, &orig_frame);
 
+  //TODO skip?
   std::vector<Point2d> detected_balls_d;
   for (int iter = 0 ; iter < (int)detected_balls->size() ; iter++)
     {
@@ -198,16 +219,21 @@ vector<tracked_ball>* BallDetector::processFrame()
 
 //  if (detected_balls->size() > 0)
 //  {
-    tracker_->dt = kalman_dt_int_ / 100.0;
-    tracker_->Accel_noise_mag = kalman_accel_noise_mag_int_ / 100.0;
-    tracker_->dist_thres = hungarian_dist_thres_int_ / 100.0;
-    tracker_->maximum_allowed_skipped_frames = hungarian_max_skipped_frames_;
-    tracker_->Update(detected_balls_d);
+
+  // Set the parameters for kalman and hungarian filters.
+  tracker_->dt = kalman_dt_int_ / 100.0;
+  tracker_->Accel_noise_mag = kalman_accel_noise_mag_int_ / 100.0;
+  tracker_->dist_thres = hungarian_dist_thres_int_ / 100.0;
+  tracker_->maximum_allowed_skipped_frames = hungarian_max_skipped_frames_;
+  // Feed the detected balls to the tracker
+  tracker_->Update(detected_balls_d);
 
 
   ROS_DEBUG_STREAM_NAMED("processFrame", "[" << name_ << "] Computed " << tracker_->tracks.size() << " tracks.");
 
-  Scalar Colors[]={Scalar(255,0,0),Scalar(0,255,0),Scalar(0,0,255),Scalar(255,255,0),Scalar(0,255,255),Scalar(255,0,255),Scalar(255,127,255),Scalar(127,0,255),Scalar(127,0,127)};
+  // Array of colors for easy
+  Scalar Colors[]={Scalar(255,0,0),Scalar(0,255,0),Scalar(0,0,255),Scalar(255,255,0),Scalar(0,255,255),
+                   Scalar(255,0,255),Scalar(255,127,255),Scalar(127,0,255),Scalar(127,0,127)};
 
   for(int i=0;i<tracker_->tracks.size();i++)
   {
@@ -247,6 +273,9 @@ vector<tracked_ball>* BallDetector::processFrame()
   return tracked_balls;
 }
 
+/*
+ * Morphological filtering of the found hypotheses
+ */
 std::vector<Point2f>* BallDetector::processContours(std::vector<std::vector<Point> > contours,
                                                                  std::vector<cv::Vec4i> hierarchy,
                                                                  Mat* frame)
